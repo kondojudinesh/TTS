@@ -9,7 +9,7 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
   try {
     const filePath = req.file.path;
     const transcript = await transcribeAudio(filePath);
-    await saveTranscript(transcript);
+    await saveTranscript(transcript, req.file.originalname);
     res.json({ transcript });
   } catch (err) {
     console.error(err);
