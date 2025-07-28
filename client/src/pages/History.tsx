@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Clock, FileAudio } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { mockGetHistory, TranscriptionResult } from '../api/api';
+import { getTranscriptionHistory, TranscriptionResult } from '../api/api';
 
 const History: React.FC = () => {
   const [history, setHistory] = useState<TranscriptionResult[]>([]);
@@ -14,12 +14,12 @@ const History: React.FC = () => {
   const fetchHistory = async () => {
     try {
       setLoading(true);
-      // Use mock function for demonstration
-      const data = await mockGetHistory();
+      // Now uses the real API with fallback built into api.ts
+      const data = await getTranscriptionHistory();
       setHistory(data);
     } catch (error) {
       console.error('Failed to fetch history:', error);
-      alert('Failed to load transcription history');
+      alert('Failed to load transcription history.');
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ const History: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <button
                       onClick={() => downloadTranscription(item.transcription, item.filename)}
                       className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
@@ -103,7 +103,7 @@ const History: React.FC = () => {
                       <span>Download</span>
                     </button>
                   </div>
-                  
+
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap line-clamp-4">
                       {item.transcription}
