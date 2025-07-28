@@ -1,6 +1,5 @@
 // services/deepgram.js
 const axios = require('axios');
-const FormData = require('form-data');
 
 /**
  * Transcribe audio using Deepgram API
@@ -9,19 +8,13 @@ const FormData = require('form-data');
  * @returns {Promise<string>} - Transcribed text
  */
 const transcribeAudio = async (audioBuffer, mimetype) => {
-  const form = new FormData();
-  form.append('audio', audioBuffer, {
-    filename: 'audio-file',
-    contentType: mimetype
-  });
-
   const response = await axios.post(
     'https://api.deepgram.com/v1/listen',
     audioBuffer,
     {
       headers: {
         Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`,
-        'Content-Type': mimetype,
+        'Content-Type': mimetype, // e.g., audio/webm or audio/mp3
       }
     }
   );
