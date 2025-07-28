@@ -7,13 +7,16 @@ const { saveTranscript } = require('../services/supabase');
 
 router.post('/transcribe', upload.single('audio'), async (req, res) => {
   try {
-    const audioBuffer = req.file.buffer;
-    const transcript = await transcribeAudio(audioBuffer);
+    const filePath = req.file.path;
+    const transcript = await transcribeAudio(filePath);
     await saveTranscript(transcript, req.file.originalname);
-    res.json({
-  transcript,
-  filename: req.file.originalname
+    res.json({ transcript, filename: req.file.originalname });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Transcription failed' });
+  }
 });
+
 
   } catch (err) {
     console.error(err);
