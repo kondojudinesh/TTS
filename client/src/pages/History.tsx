@@ -14,12 +14,11 @@ const History: React.FC = () => {
   const fetchHistory = async () => {
     try {
       setLoading(true);
-      // Now uses the real API with fallback built into api.ts
-      const data = await getTranscriptionHistory();
+      const data = await getTranscriptionHistory(); // uses fallback if needed
       setHistory(data);
     } catch (error) {
       console.error('Failed to fetch history:', error);
-      alert('Failed to load transcription history.');
+      alert('Failed to load transcription history');
     } finally {
       setLoading(false);
     }
@@ -43,7 +42,7 @@ const History: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
         <LoadingSpinner size="lg" text="Loading transcription history..." />
       </div>
     );
