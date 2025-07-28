@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ storage: multer.memoryStorage() }); // ✅ Stores in memory
 const { transcribeAudio } = require('../services/assembly');
 const { saveTranscript } = require('../services/supabase');
 
 router.post('/transcribe', upload.single('audio'), async (req, res) => {
   try {
-    const filePath = req.file.path;
-    const transcript = await transcribeAudio(filePath);
+    const audioBuffer = req.file.buffer;
+    const transcript = await transcribeAudio(audioBuffer);
     await saveTranscript(transcript, req.file.originalname);
     res.json({ transcript });
   } catch (err) {
