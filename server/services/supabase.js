@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 const saveTranscript = async (text) => {
-  const { error } = await supabase.from('transcripts').insert([{ text }]);
+  const { error } = await supabase.from('transcripts').insert([{ text, filename }]);
   if (error) throw error;
 };
 
