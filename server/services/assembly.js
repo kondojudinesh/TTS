@@ -6,53 +6,70 @@ const axios = require('axios');
  * @returns {Promise<string>} - The transcribed text.
  */
 const transcribeAudio = async (audioBuffer) => {
-  // Step 1: Upload the audio buffer to AssemblyAI
-  const uploadRes = await axios.post(
-    'https://api.assemblyai.com/v2/upload',
-    audioBuffer,
-    {
-      headers: {
-        'authorization': process.env.ASSEMBLYAI_API_KEY,
-        'content-type': 'application/octet-stream'
-      }
+  try {
+    if (!process.env.ASSEMBLYAI_API_KEY) {
+      throw new Error('❌ ASSEMBLYAI_API_KEY is not set in environment variables');
     }
-  );
 
-  const uploadUrl = uploadRes.data.upload_url;
+    console.log('🔁 Uploading audio to AssemblyAI...');
 
-  // Step 2: Request transcription
-  const transcriptRes = await axios.post(
-    'https://api.assemblyai.com/v2/transcript',
-    { audio_url: uploadUrl },
-    {
-      headers: {
-        authorization: process.env.ASSEMBLYAI_API_KEY,
-        'content-type': 'application/json'
+    const uploadRes = await axios.post(
+      'https://api.assemblyai.com/v2/upload',
+      audioBuffer,
+      {
+        headers: {
+          'authorization': process.env.ASSEMBLYAI_API_KEY,
+          'content-type': 'application/octet-stream'
+        }
       }
-    }
-  );
-
-  const transcriptId = transcriptRes.data.id;
-
-  // Step 3: Poll until transcription is complete
-  let transcript;
-  while (true) {
-    const polling = await axios.get(
-      `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
-      { headers: { authorization: process.env.ASSEMBLYAI_API_KEY } }
     );
 
-    if (polling.data.status === 'completed') {
-      transcript = polling.data.text;
-      break;
-    } else if (polling.data.status === 'error') {
-      throw new Error(`Transcription failed: ${polling.data.error}`);
+    const uploadUrl = uploadRes.data.upload_url;
+    console.log('✅ Upload successful. Upload URL:', uploadUrl);
+
+    console.log('📤 Sending transcription request...');
+
+    const transcriptRes = await axios.post(
+      'https://api.assemblyai.com/v2/transcript',
+      { audio_url: uploadUrl },
+      {
+        headers: {
+          authorization: process.env.ASSEMBLYAI_API_KEY,
+          'content-type': 'application/json'
+        }
+      }
+    );
+
+    const transcriptId = transcriptRes.data.id;
+    console.log('🧾 Transcript ID:', transcriptId);
+
+    console.log('🔁 Polling for transcription result...');
+    let transcript;
+
+    while (true) {
+      const polling = await axios.get(
+        `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
+        { headers: { authorization: process.env.ASSEMBLYAI_API_KEY } }
+      );
+
+      if (polling.data.status === 'completed') {
+        console.log('✅ Transcription completed.');
+        transcript = polling.data.text;
+        break;
+      } else if (polling.data.status === 'error') {
+        throw new Error(`❌ Transcription failed: ${polling.data.error}`);
+      }
+
+      console.log('⏳ Still processing...');
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-  }
+    return transcript;
 
-  return transcript;
+  } catch (err) {
+    console.error('❌ Error in transcribeAudio:', err.response?.data || err.message || err);
+    throw err; // Forward to the route
+  }
 };
 
 module.exports = { transcribeAudio };
