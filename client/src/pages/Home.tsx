@@ -1,35 +1,58 @@
-import React, { useState } from 'react';
-import { Download } from 'lucide-react';
-import Upload from '../components/Upload';
-import Record from '../components/Record';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { mockUploadAudio, TranscriptionResult } from '../api/api';
+import React, { useState, useEffect } from 'react';
+import { uploadAudio, TranscriptionResult } from '../api/api';
 
 const Home: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
+  const [isMockUsed, setIsMockUsed] = useState(false);
 
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-    setRecordedBlob(null);
-    setTranscription(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+
+  useEffect(() => {
+    if (mediaRecorder) {
+      mediaRecorder.ondataavailable = (event) => {
+        setAudioChunks((prev) => [...prev, event.data]);
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        setRecordedBlob(blob);
+        setAudioChunks([]);
+      };
+    }
+  }, [mediaRecorder, audioChunks]);
+
+  const startRecording = async () => {
+    setIsRecording(true);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+    setMediaRecorder(recorder);
+    recorder.start();
   };
 
-  const handleRecordingComplete = (audioBlob: Blob) => {
-    setRecordedBlob(audioBlob);
-    setSelectedFile(null);
-    setTranscription(null);
+  const stopRecording = () => {
+    setIsRecording(false);
+    mediaRecorder?.stop();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
   };
 
   const handleTranscribe = async () => {
     if (!selectedFile && !recordedBlob) return;
 
     setIsTranscribing(true);
+    setIsMockUsed(false);
     try {
       let file: File;
-      
+
       if (selectedFile) {
         file = selectedFile;
       } else if (recordedBlob) {
@@ -38,9 +61,9 @@ const Home: React.FC = () => {
         return;
       }
 
-      // Use mock function for demonstration
-      const result = await mockUploadAudio(file);
+      const result = await uploadAudio(file);
       setTranscription(result);
+      if (result.mock === true) setIsMockUsed(true);
     } catch (error) {
       console.error('Transcription error:', error);
       alert('Failed to transcribe audio. Please try again.');
@@ -49,103 +72,49 @@ const Home: React.FC = () => {
     }
   };
 
-  const downloadTranscription = (text: string, filename: string) => {
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename.replace(/\.[^/.]+$/, '')}-transcription.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const canTranscribe = (selectedFile || recordedBlob) && !isTranscribing;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-8">
-          
-          {/* Upload Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-              Upload Audio File
-            </h2>
-            <Upload onFileSelect={handleFileSelect} disabled={isTranscribing} />
-            {selectedFile && (
-              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                <p className="text-green-800 dark:text-green-300 font-medium">
-                  Selected: {selectedFile.name}
-                </p>
-              </div>
-            )}
-          </div>
+    <div className="p-4 text-gray-900 dark:text-white">
+      <h1 className="text-3xl font-bold mb-4">Audio Transcription</h1>
 
-          {/* Recording Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-              Record Audio
-            </h2>
-            <Record onRecordingComplete={handleRecordingComplete} disabled={isTranscribing} />
-            {recordedBlob && (
-              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                <p className="text-green-800 dark:text-green-300 font-medium">
-                  Recording completed! Ready to transcribe.
-                </p>
-              </div>
-            )}
-          </div>
+      <div className="space-y-4">
+        <div>
+          <label className="block mb-1">Upload an audio file:</label>
+          <input type="file" accept="audio/*" onChange={handleFileChange} />
+        </div>
 
-          {/* Transcribe Button */}
-          <div className="text-center">
-            <button
-              onClick={handleTranscribe}
-              disabled={!canTranscribe}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-lg shadow-lg disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:transform-none hover:shadow-2xl"
-            >
-              {isTranscribing ? 'Transcribing...' : 'Transcribe Audio'}
-            </button>
-          </div>
+        <div>
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+            onClick={isRecording ? stopRecording : startRecording}
+          >
+            {isRecording ? 'Stop Recording' : 'Start Recording'}
+          </button>
+        </div>
 
-          {/* Loading State */}
-          {isTranscribing && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-              <LoadingSpinner size="lg" text="Transcribing your audio..." />
-            </div>
-          )}
-
-          {/* Transcription Result */}
-          {transcription && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Transcription Result
-                </h3>
-                <button
-                  onClick={() => downloadTranscription(transcription.transcription, transcription.filename)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
-                >
-                  <Download className="w-4 h-4 hover:animate-bounce" />
-                  <span>Download</span>
-                </button>
-              </div>
-              
-              <div className="space-y-3">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-medium">File:</span> {transcription.filename}
-                </p>
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                    {transcription.transcription}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+        <div>
+          <button
+            className="bg-green-600 text-white px-4 py-2 rounded"
+            onClick={handleTranscribe}
+            disabled={isTranscribing || (!selectedFile && !recordedBlob)}
+          >
+            {isTranscribing ? 'Transcribing...' : 'Transcribe Audio'}
+          </button>
         </div>
       </div>
+
+      {transcription && (
+        <div className="mt-6">
+          <h2 className="text-xl font-semibold mb-2">Transcription Result:</h2>
+          <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-x-auto">
+            {JSON.stringify(transcription, null, 2)}
+          </pre>
+          {isMockUsed && (
+            <p className="mt-2 text-yellow-500 font-semibold">
+              ⚠️ Using mock data because backend API was unavailable.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
