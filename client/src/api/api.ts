@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Replace with your actual backend URL
-const BASE_URL = 'YOUR_BACKEND_URL';
+const BASE_URL = 'https://tts-d3ed.onrender.com';
 
 const api = axios.create({
   baseURL: BASE_URL,
