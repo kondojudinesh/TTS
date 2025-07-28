@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Replace with your actual backend URL
-const BASE_URL = 'process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -50,12 +50,18 @@ export const uploadAudio = async (file: File): Promise<TranscriptionResult> => {
   formData.append('audio', file);
 
   try {
-    const response = await api.post('/api/upload', formData, {
+    const response = await api.post('/api/audio/transcribe', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    return {
+  id: Date.now().toString(),
+  filename: response.data.filename,
+  transcription: response.data.transcript,
+  created_at: new Date().toISOString()
+};
+
   } catch (error) {
     console.warn('❌ Upload failed, using mock response.', error);
     return await mockUploadAudio(file); // Fallback to mock
