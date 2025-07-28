@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Clock, FileAudio } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { getTranscriptionHistory, TranscriptionResult } from '../api/api';
+import { mockGetHistory, TranscriptionResult } from '../api/api';
 
 const History: React.FC = () => {
   const [history, setHistory] = useState<TranscriptionResult[]>([]);
@@ -15,7 +15,7 @@ const History: React.FC = () => {
     try {
       setLoading(true);
       // Use mock function for demonstration
-      const data = await getTranscriptionHistory();
+      const data = await mockGetHistory();
       setHistory(data);
     } catch (error) {
       console.error('Failed to fetch history:', error);
