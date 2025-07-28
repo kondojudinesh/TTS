@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import Upload from '../components/Upload';
 import Record from '../components/Record';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { uploadAudio, TranscriptionResult } from '../api/api';
+import { mockUploadAudio, TranscriptionResult } from '../api/api';
 
 const Home: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -39,7 +39,7 @@ const Home: React.FC = () => {
       }
 
       // Use mock function for demonstration
-      const result = await uploadAudio(file);
+      const result = await mockUploadAudio(file);
       setTranscription(result);
     } catch (error) {
       console.error('Transcription error:', error);
