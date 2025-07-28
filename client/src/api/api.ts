@@ -50,7 +50,7 @@ export const uploadAudio = async (file: File): Promise<TranscriptionResult> => {
   formData.append('audio', file);
 
   try {
-    const response = await api.post('/api/audio/upload', formData, {
+    const response = await api.post('/api/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
