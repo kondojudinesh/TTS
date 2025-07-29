@@ -3,7 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 // IMPORTANT: use the SERVICE ROLE key on the server
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE // <-- add this env var in Render
+  process.env.SUPABASE_SERVICE_ROLE_KEY // <-- add this env var in Render
 );
 
 // Save and return the inserted row (including filename)
