@@ -20,32 +20,35 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
     console.log('📥 Received audio:', {
       filename: req.file.originalname,
       mimetype: req.file.mimetype,
-      size: req.file.size
+      size: req.file.size,
     });
 
-    // 3) Call Deepgram
-    const transcript = await transcribeAudio(req.file.buffer, req.file.mimetype);
+    // 3) Transcribe with Deepgram
+    const transcriptText = await transcribeAudio(req.file.buffer, req.file.mimetype);
 
-    // 4) Persist (optional – adjust to your schema)
+    // 4) Save in Supabase and get the inserted row back
+    let row = null;
     try {
-      await saveTranscript(transcript, req.file.originalname);
+      row = await saveTranscript(transcriptText, req.file.originalname);
     } catch (dbErr) {
       console.error('⚠️ Failed to save transcript to DB:', dbErr);
-      // Not fatal for the API response; we still return the transcript
+      // Not fatal: we can still return the transcription without DB data
     }
 
-    // 5) Respond with what the frontend expects
+    // 5) Respond in a shape your frontend expects
+    //    Prefer values from DB row when available; otherwise fall back.
     return res.json({
-      transcript,
-      filename: req.file.originalname
+      id: row?.id || null,
+      filename: row?.filename || req.file.originalname,
+      transcript: row?.text || transcriptText,   // client maps transcript -> transcription
+      created_at: row?.created_at || new Date().toISOString(),
     });
 
   } catch (err) {
-    // 6) Show the real reason in logs and return a readable message to the client
-    console.error('❌ Transcription failed:', err.response?.data || err.message || err);
+    console.error('❌ Transcription failed:', err?.response?.data || err.message || err);
     return res.status(500).json({
       error: 'Transcription failed',
-      detail: err.response?.data || err.message || 'Unknown server error'
+      detail: err?.response?.data || err.message || 'Unknown server error',
     });
   }
 });
