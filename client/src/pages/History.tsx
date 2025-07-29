@@ -104,7 +104,7 @@ const History: React.FC = () => {
                   </div>
 
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap line-clamp-4">
+                    <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
                     {item.transcription}
                     </p>
                   </div>
