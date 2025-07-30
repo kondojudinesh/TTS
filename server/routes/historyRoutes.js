@@ -1,3 +1,4 @@
+// routes/historyRoutes.js
 const express = require('express');
 const router = express.Router();
 const { getTranscriptHistory } = require('../services/supabase');
@@ -5,19 +6,10 @@ const { getTranscriptHistory } = require('../services/supabase');
 router.get('/', async (req, res) => {
   try {
     const rows = await getTranscriptHistory();
-
-    // Map DB rows -> UI shape your React expects
-    const history = rows.map(r => ({
-      id: r.id,
-      filename: r.filename || 'Unknown',
-      transcription: r.text || '',
-      created_at: r.created_at,
-    }));
-
-    res.json(history);
+    res.json(rows); // ✅ raw format, frontend maps it
   } catch (err) {
-    console.error('GET /api/history error:', err?.response?.data || err.message || err);
-    res.status(500).json({ error: 'Could not fetch history' });
+    console.error('❌ Failed to get history:', err.message || err);
+    res.status(500).json({ error: 'Failed to load history' });
   }
 });
 
